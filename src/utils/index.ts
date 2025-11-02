@@ -1,5 +1,5 @@
 /**
- * Hedron Agent SDK - Utilities Module
+ * Aether Agent SDK - Utilities Module
  * 
  * Export utility functions
  */

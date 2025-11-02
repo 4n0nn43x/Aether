@@ -7,7 +7,7 @@ dotenv.config()
 
 async function main() {
   console.log(chalk.bold.cyan('\n════════════════════════════════════════════════════════'))
-  console.log(chalk.bold.cyan('  Aether x402 Payment Demo - Solana Devnet'))
+  console.log(chalk.bold.cyan('  Aether x402 Payment Demo'))
   console.log(chalk.bold.cyan('════════════════════════════════════════════════════════\n'))
 
   try {

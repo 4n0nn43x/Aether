@@ -5,11 +5,11 @@ dotenv.config()
 
 async function main() {
   console.log(chalk.bold.cyan('\n════════════════════════════════════════════════════════'))
-  console.log(chalk.bold.cyan('  Aether Agent Orchestrator - Solana'))
+  console.log(chalk.bold.cyan('  Aether - Autonomous Agent SDK'))
   console.log(chalk.bold.cyan('════════════════════════════════════════════════════════\n'))
 
   console.log(chalk.yellow('🤖 Available Demos:\n'))
-  console.log(chalk.blue('1. Solana x402 Payment Demo'))
+  console.log(chalk.blue('1. x402 Payment Demo'))
   console.log(chalk.gray('   npm run demo:payment\n'))
 
   console.log(chalk.green('💡 Quick Start:\n'))
@@ -26,7 +26,7 @@ async function main() {
   console.log(chalk.gray('   npm run demo:payment\n'))
 
   console.log(chalk.bold.cyan('════════════════════════════════════════════════════════'))
-  console.log(chalk.bold.cyan('  For x402 Solana Hackathon'))
+  console.log(chalk.bold.cyan('  Autonomous Payments on Solana'))
   console.log(chalk.bold.cyan('════════════════════════════════════════════════════════\n'))
 }
 
