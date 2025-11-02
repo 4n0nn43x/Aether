@@ -61,7 +61,8 @@
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "demo": "ts-node demo/orchestrator.ts",
-    "demo:payment": "ts-node demo/solana-x402-payment.ts"
+    "demo:payment": "ts-node demo/solana-x402-payment.ts",
+    "release": "npm run build && npm version patch && npm publish"
   },
   "repository": {
     "type": "git",
