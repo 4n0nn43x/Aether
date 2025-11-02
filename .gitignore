@@ -1,4 +1,37 @@
-node_modules
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment files
 .env
-dist
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
 *.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+temp/
+tmp/
+
+# Claude
+.claude/
