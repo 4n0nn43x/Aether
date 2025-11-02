@@ -18,6 +18,15 @@ export class SettlementAgent {
     const merchantWallet = process.env.MERCHANT_WALLET_ADDRESS
 
     if (!merchantWallet) {
+      console.error(chalk.red('\n❌ Configuration Error: Missing MERCHANT_WALLET_ADDRESS'))
+      console.log(chalk.yellow('\n📋 Setup Instructions:'))
+      console.log(chalk.white('1. Copy the example configuration:'))
+      console.log(chalk.gray('   cp .env.example .env\n'))
+      console.log(chalk.white('2. Edit .env and add:'))
+      console.log(chalk.gray('   AGENT_PRIVATE_KEY=your_base58_key'))
+      console.log(chalk.gray('   MERCHANT_WALLET_ADDRESS=recipient_address\n'))
+      console.log(chalk.white('3. Generate a Solana wallet (if needed):'))
+      console.log(chalk.gray('   solana-keygen new --outfile wallet.json\n'))
       throw new Error('Missing required environment variable: MERCHANT_WALLET_ADDRESS')
     }
 

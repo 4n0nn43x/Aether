@@ -29,8 +29,11 @@ export class X402FacilitatorServer {
         this.agentWallet = Keypair.fromSecretKey(privateKeyBytes)
         console.log(chalk.green(`✅ Facilitator initialized with wallet: ${this.agentWallet.publicKey.toBase58()}`))
       } catch (error) {
-        console.error(chalk.red('❌ Failed to load agent wallet:'), error)
+        console.warn(chalk.yellow('⚠️  Invalid AGENT_PRIVATE_KEY format. Please provide a valid base58 encoded key.'))
+        console.warn(chalk.yellow('    Generate one with: solana-keygen new'))
       }
+    } else {
+      console.warn(chalk.yellow('⚠️  AGENT_PRIVATE_KEY not configured. Some features will be unavailable.'))
     }
   }
 

@@ -52,7 +52,14 @@ async function main() {
     console.log(chalk.bold.cyan('════════════════════════════════════════════════════════\n'))
 
   } catch (error) {
-    console.error(chalk.red('\n❌ Demo Error:'), error)
+    console.error(chalk.red('\n❌ Demo Error:'))
+    if (error instanceof Error) {
+      console.error(chalk.red(error.message))
+    } else {
+      console.error(error)
+    }
+    console.log(chalk.yellow('\n💡 Tip: Make sure you have configured your .env file'))
+    console.log(chalk.gray('    See .env.example for reference\n'))
     process.exit(1)
   }
 }
