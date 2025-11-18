@@ -42,7 +42,7 @@ We are committed to providing a welcoming and inclusive environment for all cont
 
 1. **Fork and Clone**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/aether.git
+   git clone https://github.com/4n0nn43x/aether.git
    cd aether
    ```
 
