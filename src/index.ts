@@ -12,6 +12,9 @@ export * from './agents'
 // Facilitator
 export * from './facilitator'
 
+// Marketplace
+export * from './marketplace'
+
 // Utils
 export * from './utils'
 
