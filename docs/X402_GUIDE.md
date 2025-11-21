@@ -158,20 +158,19 @@ const requirements = {
   network: 'solana-devnet',
   asset: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU',
   payTo: 'merchant_wallet_address',
-  maxAmountRequired: '1000000', // 1 USDC
+  maxAmountRequired: '1000000',
   resource: '/api/protected-resource',
   description: 'Access to premium API',
   mimeType: 'application/json',
   maxTimeoutSeconds: 120
 }
 
-// Execute payment
-const txHash = await agent.executeSolanaTransfer(
+const paymentHeader = await agent.createSignedPayment(
   requirements.payTo,
-  1.0 // USDC amount
+  1.0
 )
 
-console.log('Payment completed:', txHash)
+console.log('Payment created:', paymentHeader)
 ```
 
 ### Verifying Before Settlement
@@ -390,13 +389,12 @@ const payments = [
 ]
 
 for (const payment of payments) {
-  const txHash = await agent.executeSolanaTransfer(
+  const paymentHeader = await agent.createSignedPayment(
     payment.to,
     payment.amount
   )
-  console.log(`Paid ${payment.amount} USDC to ${payment.to}: ${txHash}`)
+  console.log(`Created payment: ${payment.amount} USDC to ${payment.to}`)
 
-  // Add delay to avoid rate limiting
   await new Promise(resolve => setTimeout(resolve, 500))
 }
 ```

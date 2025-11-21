@@ -67,12 +67,10 @@ import { SettlementAgent } from 'aether-agent-sdk'
 const agent = new SettlementAgent()
 await agent.init()
 
-const txHash = await agent.executeSolanaTransfer(
+const paymentHeader = await agent.createSignedPayment(
   'merchant_wallet_address',
-  1.0 // USDC amount
+  1.0
 )
-
-console.log(`Payment sent: ${txHash}`)
 ```
 
 ---
@@ -88,22 +86,15 @@ console.log(`Payment sent: ${txHash}`)
 
 ## 🎬 Demo
 
-Run the included demo to see Aether in action:
+See the complete working demo with AI weather agents:
 
-```bash
-# Install dependencies
-npm install
+👉 **[github.com/4n0nn43x/aether-demo](https://github.com/4n0nn43x/aether-demo)**
 
-# Build the project
-npm run build
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your credentials
-
-# Run demo
-npm run demo:payment
-```
+The demo shows:
+- x402 payment-gated weather API
+- AI-powered customer agent
+- Real USDC settlements on Solana
+- Full comparison with simple HTTP agents
 
 ---
 

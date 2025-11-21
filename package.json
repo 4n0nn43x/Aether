@@ -1,6 +1,6 @@
 {
   "name": "aether-agent-sdk",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "description": "Autonomous Agent Ecosystem SDK for Solana - A2A Protocol, x402 Payment Standard, and Agent-to-Agent Communication",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
@@ -60,8 +60,6 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "demo": "ts-node demo/orchestrator.ts",
-    "demo:payment": "ts-node demo/solana-x402-payment.ts",
     "release": "npm run build && npm version patch && npm publish"
   },
   "repository": {

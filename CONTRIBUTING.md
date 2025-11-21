@@ -125,12 +125,12 @@ refactor(protocols): simplify A2A message handling
 **Example:**
 ```typescript
 /**
- * Executes a Solana transfer with the specified parameters
+ * Creates a signed x402 payment
  * @param recipient - The recipient's wallet address
  * @param amount - Amount in USDC
- * @returns Transaction signature hash
+ * @returns Base64-encoded payment header
  */
-async executeSolanaTransfer(
+async createSignedPayment(
   recipient: string,
   amount: number
 ): Promise<string> {
@@ -240,8 +240,8 @@ try {
 **Example Test Structure:**
 ```typescript
 describe('SettlementAgent', () => {
-  describe('executeSolanaTransfer', () => {
-    it('should successfully transfer USDC to recipient', async () => {
+  describe('createSignedPayment', () => {
+    it('should create signed payment header', async () => {
       // Test implementation
     })
 

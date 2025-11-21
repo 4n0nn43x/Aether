@@ -14,7 +14,7 @@ import { SettlementAgent } from 'aether-agent-sdk'
 const agent = new SettlementAgent()
 await agent.init()
 
-const txHash = await agent.executeSolanaTransfer(
+const paymentHeader = await agent.createSignedPayment(
   'merchant_wallet_address',
   1.0 // USDC
 )
@@ -35,7 +35,7 @@ async function makePayment(recipient: string, amount: number) {
 
     console.log(chalk.blue(`Sending ${amount} USDC to ${recipient}...`))
 
-    const txHash = await agent.executeSolanaTransfer(recipient, amount)
+    const paymentHeader = await agent.createSignedPayment(recipient, amount)
 
     if (txHash) {
       console.log(chalk.green('✅ Payment successful!'))
@@ -84,7 +84,7 @@ class PaidAPIClient {
 
   async callPaidEndpoint(endpoint: string, costUSDC: number) {
     // Pay first
-    const txHash = await this.agent.executeSolanaTransfer(
+    const paymentHeader = await this.agent.createSignedPayment(
       this.merchantWallet,
       costUSDC
     )
@@ -143,7 +143,7 @@ class AgentMarketplace {
     console.log(`Price: ${service.price} USDC`)
     console.log(`Provider: ${service.provider}`)
 
-    const txHash = await this.agent.executeSolanaTransfer(
+    const paymentHeader = await this.agent.createSignedPayment(
       service.provider,
       service.price
     )
@@ -194,13 +194,12 @@ class SubscriptionManager {
     providerWallet: string,
     pricePerMonth: number
   ) {
-    // Make initial payment
-    await this.agent.executeSolanaTransfer(providerWallet, pricePerMonth)
+    await this.agent.createSignedPayment(providerWallet, pricePerMonth)
 
     // Schedule monthly payments
     const interval = setInterval(async () => {
       try {
-        const txHash = await this.agent.executeSolanaTransfer(
+        const paymentHeader = await this.agent.createSignedPayment(
           providerWallet,
           pricePerMonth
         )
@@ -258,7 +257,7 @@ class ContentPaymentGateway {
     price: number
   ): Promise<any> {
     // Pay for content
-    const txHash = await this.agent.executeSolanaTransfer(creator, price)
+    const paymentHeader = await this.agent.createSignedPayment(creator, price)
 
     if (!txHash) {
       throw new Error('Payment required to access content')
@@ -398,7 +397,7 @@ describe('SettlementAgent', () => {
   })
 
   it('should execute payment', async () => {
-    const txHash = await agent.executeSolanaTransfer(
+    const paymentHeader = await agent.createSignedPayment(
       'test_wallet',
       1.0
     )
@@ -409,7 +408,7 @@ describe('SettlementAgent', () => {
 
   it('should handle insufficient balance', async () => {
     // Mock insufficient balance scenario
-    const txHash = await agent.executeSolanaTransfer(
+    const paymentHeader = await agent.createSignedPayment(
       'test_wallet',
       999999.0
     )

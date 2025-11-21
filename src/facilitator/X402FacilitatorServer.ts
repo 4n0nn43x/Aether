@@ -149,54 +149,91 @@ export class X402FacilitatorServer {
 
   private async executeUSDCTransfer(paymentPayload: any, requirements: any): Promise<string | null> {
     try {
-      console.log(chalk.blue('💰 Executing USDC transfer on Solana...'))
-
-      if (!this.agentWallet) {
-        throw new Error('Agent wallet not initialized')
-      }
+      console.log(chalk.blue('💰 Processing x402 payment on Solana...'))
 
       const authorization = paymentPayload.payload?.authorization
       if (!authorization) {
         throw new Error('No authorization found in payment payload')
       }
 
-      const recipientAddress = new PublicKey(authorization.to)
-      const amount = Number(authorization.value)
+      // Check if payload contains a pre-signed transaction (standard x402 flow)
+      const signedTransactionBase64 = paymentPayload.payload?.signedTransaction
 
-      const token = new Token(
-        this.connection,
-        this.usdcMint,
-        TOKEN_PROGRAM_ID,
-        this.agentWallet
-      )
+      if (signedTransactionBase64) {
+        // Standard x402 flow: Submit pre-signed transaction
+        console.log(chalk.blue('📋 Pre-signed transaction detected (standard x402 flow)'))
+        console.log(chalk.blue(`📋 From: ${authorization.from}`))
+        console.log(chalk.blue(`📋 To: ${authorization.to}`))
+        console.log(chalk.blue(`📋 Amount: ${Number(authorization.value) / 1_000_000} USDC`))
 
-      const fromTokenAccount = await token.getOrCreateAssociatedAccountInfo(
-        this.agentWallet.publicKey
-      )
+        // Deserialize the transaction
+        const transactionBuffer = Buffer.from(signedTransactionBase64, 'base64')
+        const transaction = Transaction.from(transactionBuffer)
 
-      const toTokenAccount = await token.getOrCreateAssociatedAccountInfo(
-        recipientAddress
-      )
+        console.log(chalk.yellow('📋 Submitting pre-signed transaction to Solana...'))
 
-      console.log(chalk.blue(`📋 Current USDC balance: ${Number(fromTokenAccount.amount) / 1_000_000} USDC`))
-      console.log(chalk.blue(`📋 Transfer amount: ${amount / 1_000_000} USDC`))
-      console.log(chalk.blue(`📋 Recipient: ${recipientAddress.toBase58()}`))
+        // Submit the pre-signed transaction
+        const signature = await this.connection.sendRawTransaction(
+          transaction.serialize(),
+          {
+            skipPreflight: false,
+            preflightCommitment: 'confirmed'
+          }
+        )
 
-      if (Number(fromTokenAccount.amount) < amount) {
-        throw new Error(`Insufficient USDC balance: ${Number(fromTokenAccount.amount) / 1_000_000} < ${amount / 1_000_000}`)
+        // Wait for confirmation
+        await this.connection.confirmTransaction(signature, 'confirmed')
+
+        console.log(chalk.green(`✅ Transaction confirmed: ${signature}`))
+        return signature
+
+      } else {
+        // Fallback: Old behavior (facilitator creates and executes the transaction)
+        console.log(chalk.yellow('⚠️  No pre-signed transaction - using legacy flow'))
+
+        if (!this.agentWallet) {
+          throw new Error('Agent wallet not initialized (required for legacy flow)')
+        }
+
+        const recipientAddress = new PublicKey(authorization.to)
+        const amount = Number(authorization.value)
+
+        const token = new Token(
+          this.connection,
+          this.usdcMint,
+          TOKEN_PROGRAM_ID,
+          this.agentWallet
+        )
+
+        const fromTokenAccount = await token.getOrCreateAssociatedAccountInfo(
+          this.agentWallet.publicKey
+        )
+
+        const toTokenAccount = await token.getOrCreateAssociatedAccountInfo(
+          recipientAddress
+        )
+
+        console.log(chalk.blue(`📋 Current USDC balance: ${Number(fromTokenAccount.amount) / 1_000_000} USDC`))
+        console.log(chalk.blue(`📋 Transfer amount: ${amount / 1_000_000} USDC`))
+        console.log(chalk.blue(`📋 Recipient: ${recipientAddress.toBase58()}`))
+
+        if (Number(fromTokenAccount.amount) < amount) {
+          throw new Error(`Insufficient USDC balance: ${Number(fromTokenAccount.amount) / 1_000_000} < ${amount / 1_000_000}`)
+        }
+
+        console.log(chalk.yellow('📋 Submitting transaction...'))
+        const signature = await token.transfer(
+          fromTokenAccount.address,
+          toTokenAccount.address,
+          this.agentWallet,
+          [],
+          amount
+        )
+
+        console.log(chalk.green(`✅ Transfer confirmed: ${signature}`))
+        return signature
       }
 
-      console.log(chalk.yellow('📋 Submitting transaction...'))
-      const signature = await token.transfer(
-        fromTokenAccount.address,
-        toTokenAccount.address,
-        this.agentWallet,
-        [],
-        amount
-      )
-
-      console.log(chalk.green(`✅ Transfer confirmed: ${signature}`))
-      return signature
     } catch (error) {
       console.error('❌ USDC transfer error:', error)
       return null

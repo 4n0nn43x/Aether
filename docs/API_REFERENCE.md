@@ -141,26 +141,25 @@ Triggers a payment settlement.
 await agent.triggerSettlement({ approved: true, amount: 1.0 })
 ```
 
-##### `executeSolanaTransfer(recipientAddress: string, amountUsdc: number): Promise<string | null>`
+##### `createSignedPayment(recipientAddress: string, amountUsdc: number): Promise<string>`
 
-Executes a direct USDC transfer.
+Creates a signed x402 payment transaction.
 
 **Parameters:**
 - `recipientAddress` - Recipient's Solana wallet address
 - `amountUsdc` - Amount in USDC (e.g., 1.0 for 1 USDC)
 
 **Returns:**
-- Transaction signature (string) or null on failure
+- Base64-encoded x402 payment header containing the signed transaction
 
 **Example:**
 ```typescript
-const signature = await agent.executeSolanaTransfer(
+const paymentHeader = await agent.createSignedPayment(
   'merchant_wallet_address',
   1.0
 )
 
-console.log('Transaction:', signature)
-// https://explorer.solana.com/tx/{signature}?cluster=devnet
+// Send paymentHeader to server via X-Payment-Header
 ```
 
 ---
@@ -235,14 +234,10 @@ const agent = new SettlementAgent()
 await agent.init()
 
 const merchantAddress = 'merchant_wallet_here'
-const amount = 1.0 // USDC
+const amount = 1.0
 
-const txHash = await agent.executeSolanaTransfer(merchantAddress, amount)
-
-if (txHash) {
-  console.log(`Payment successful: ${txHash}`)
-  console.log(`Explorer: https://explorer.solana.com/tx/${txHash}?cluster=devnet`)
-}
+const paymentHeader = await agent.createSignedPayment(merchantAddress, amount)
+console.log('Payment created:', paymentHeader)
 ```
 
 ### Custom Payment Requirements
@@ -295,16 +290,12 @@ try {
   const agent = new SettlementAgent()
   await agent.init()
 
-  const txHash = await agent.executeSolanaTransfer(
+  const paymentHeader = await agent.createSignedPayment(
     recipientAddress,
     amount
   )
 
-  if (!txHash) {
-    throw new Error('Payment failed')
-  }
-
-  console.log('Success:', txHash)
+  console.log('Payment created:', paymentHeader)
 } catch (error) {
   console.error('Payment error:', error.message)
   // Handle error appropriately

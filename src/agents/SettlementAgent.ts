@@ -1,4 +1,5 @@
-import { Connection, PublicKey, Keypair } from '@solana/web3.js'
+import { Connection, PublicKey, Keypair, Transaction } from '@solana/web3.js'
+import { Token, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { X402FacilitatorServer } from '../facilitator/X402FacilitatorServer'
 import chalk from 'chalk'
 import dotenv from 'dotenv'
@@ -139,35 +140,94 @@ export class SettlementAgent {
     }
   }
 
-  async executeSolanaTransfer(recipientAddress: string, amountUsdc: number): Promise<string | null> {
+  /**
+   * Creates a signed x402 payment
+   */
+  async createSignedPayment(recipientAddress: string, amountUsdc: number): Promise<string> {
     try {
       if (!this.agentWallet) {
         throw new Error('Agent wallet not initialized')
       }
 
-      console.log(chalk.blue(`💸 Executing direct USDC transfer to ${recipientAddress}`))
+      console.log(chalk.blue(`📝 Creating signed x402 payment...`))
       console.log(chalk.blue(`💵 Amount: ${amountUsdc} USDC`))
+      console.log(chalk.blue(`📍 Recipient: ${recipientAddress}`))
 
-      const requirements = {
-        ...this.createPaymentRequirements(),
-        payTo: recipientAddress,
-        maxAmountRequired: Math.floor(amountUsdc * 1_000_000).toString()
+      const amountInMicroUsdc = Math.floor(amountUsdc * 1_000_000)
+      const recipientPubkey = new PublicKey(recipientAddress)
+      const usdcMint = new PublicKey(process.env.USDC_MINT || '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU')
+
+      // Create token instance
+      const token = new Token(
+        this.connection,
+        usdcMint,
+        TOKEN_PROGRAM_ID,
+        this.agentWallet
+      )
+
+      // Get or create token accounts
+      const fromTokenAccount = await token.getOrCreateAssociatedAccountInfo(
+        this.agentWallet.publicKey
+      )
+
+      const toTokenAccount = await token.getOrCreateAssociatedAccountInfo(
+        recipientPubkey
+      )
+
+      console.log(chalk.blue(`📋 From: ${this.agentWallet.publicKey.toBase58()}`))
+      console.log(chalk.blue(`📋 To: ${recipientAddress}`))
+
+      // Create transfer instruction
+      const transferInstruction = Token.createTransferInstruction(
+        TOKEN_PROGRAM_ID,
+        fromTokenAccount.address,
+        toTokenAccount.address,
+        this.agentWallet.publicKey,
+        [],
+        amountInMicroUsdc
+      )
+
+      // Create transaction
+      const transaction = new Transaction().add(transferInstruction)
+
+      // Get recent blockhash
+      const { blockhash } = await this.connection.getRecentBlockhash()
+      transaction.recentBlockhash = blockhash
+      transaction.feePayer = this.agentWallet.publicKey
+
+      // Sign transaction
+      transaction.sign(this.agentWallet)
+
+      console.log(chalk.green(`✅ Transaction signed`))
+
+      // Create x402 payload with signed transaction
+      const validBefore = Math.floor(Date.now() / 1000) + 300 // 5 minutes
+
+      const paymentPayload = {
+        x402Version: 1,
+        scheme: 'exact',
+        network: 'solana-devnet',
+        payload: {
+          authorization: {
+            from: this.agentWallet.publicKey.toBase58(),
+            to: recipientAddress,
+            value: amountInMicroUsdc.toString(),
+            asset: usdcMint.toBase58(),
+            validBefore: validBefore
+          },
+          signedTransaction: transaction.serialize().toString('base64')
+        }
       }
 
-      const paymentPayload = this.createPaymentPayload(requirements)
+      // Encode to base64
       const paymentHeader = Buffer.from(JSON.stringify(paymentPayload)).toString('base64')
 
-      const settlementResult = await this.facilitator.settle(paymentHeader, requirements)
+      console.log(chalk.green(`✅ x402 payment created (signed transaction included)`))
 
-      if (settlementResult.success) {
-        console.log(chalk.green(`✅ Transfer successful: ${settlementResult.txHash}`))
-        return settlementResult.txHash
-      }
-
-      return null
+      return paymentHeader
     } catch (error) {
-      console.error('❌ Transfer error:', error)
-      return null
+      console.error(chalk.red('❌ Error creating signed payment:'), error)
+      throw error
     }
   }
 }
