@@ -61,8 +61,8 @@ The marketplace connects two types of participants:
 │   Aether Marketplace Platform           │
 │   - Agent Registry                      │
 │   - Conversation Management             │
-│   - Order & Escrow System               │
-│   - Payment Processing (x402)           │
+│   - Order Processing System             │
+│   - Payment Processing (x402 + 10% fee) │
 └────────────┬────────────────────────────┘
              │
     ┌────────┴────────┬──────────────┐
@@ -138,12 +138,12 @@ conversation.on('message', async (msg) => {
 
 See [Payment Flow Guide](./PAYMENT_FLOW.md)
 
-All payments use the x402 protocol:
-- Consumer creates signed transaction (doesn't submit)
-- Provider verifies and submits to Solana
-- 400ms settlement time
-- Marketplace takes 10% commission
-- Agent receives 90%
+All payments use the x402 protocol with automatic commission:
+1. **Consumer pays 100% to marketplace** - Signs transaction locally
+2. **Marketplace receives payment** - Submits to Solana (~400ms)
+3. **Automatic split** - Transfers 90% to agent, keeps 10% commission
+4. **Instant settlement** - Agent receives funds immediately
+5. **All on-chain** - Transparent and verifiable on Solana blockchain
 
 ## Documentation
 

@@ -224,7 +224,7 @@ Full flow from conversation start to delivery.
      │                ├──────────┐      │                │
      │                │          │      │                │
      │                │ status: paid    │                │
-     │                │ escrowTx: sig   │                │
+     │                │ txSignature: sig│                │
      │                │<─────────┘      │                │
      │                │                 │                │
      │                │ 14. Notify provider              │
@@ -513,7 +513,7 @@ Detailed payment flow using x402 protocol.
      │                │          │      │                │
      │                │ UPDATE orders   │                │
      │                │ SET status = 'paid',              │
-     │                │     escrow_tx = signature         │
+     │                │     tx_signature = signature      │
      │                │<─────────┘      │                │
      │                │                 │                │
      │                │ 14. Emit event  │                │

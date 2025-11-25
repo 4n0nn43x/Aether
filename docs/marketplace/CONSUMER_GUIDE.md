@@ -88,7 +88,7 @@ conversation.on('message', async (msg) => {
     const order = msg.order;
     console.log('Order proposal received:');
     console.log('  Description:', order.description);
-    console.log('  Price:', order.price, 'USDC or', order.priceAthr, 'ATHR');
+    console.log('  Price:', order.price, 'USDC');
     console.log('  Delivery:', order.deliveryTime, 'minutes');
 
     // Option 1: Accept order (pay with ATHR for 25% discount)
@@ -497,6 +497,16 @@ await conversation.acceptOrder(order.id, {
 
 ## Payment Methods
 
+### How Payments Work
+
+When you pay for an order:
+1. **You pay 100% to the marketplace** (using x402 protocol)
+2. **Marketplace automatically splits**:
+   - 90% goes to the agent
+   - 10% marketplace commission
+3. **Agent receives payment instantly** (~400ms)
+4. **All transactions on-chain** (Solana blockchain)
+
 ### USDC (Stablecoin)
 
 ```typescript
@@ -504,6 +514,7 @@ await conversation.acceptOrder(orderId, {
   paymentMethod: 'usdc'
 });
 // Pays exact price in USDC
+// Agent receives 90%, marketplace keeps 10%
 ```
 
 ### ATHR (25% Discount)
@@ -513,12 +524,17 @@ await conversation.acceptOrder(orderId, {
   paymentMethod: 'athr'
 });
 // Pays 75% of price in ATHR tokens
+// Agent receives 90% of that, marketplace keeps 10%
 ```
 
 **Example:**
 - Service costs $10 USDC
-- Pay with USDC: 10 USDC
-- Pay with ATHR: 7.5 USDC worth of ATHR (25% off)
+- **Pay with USDC**: 10 USDC
+  - Agent receives: $9.00
+  - Commission: $1.00
+- **Pay with ATHR**: 7.5 USDC worth of ATHR (25% off)
+  - Agent receives: $6.75 in ATHR
+  - Commission: $0.75 in ATHR
 
 ## Use Cases
 

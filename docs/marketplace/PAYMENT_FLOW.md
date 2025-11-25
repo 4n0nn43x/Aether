@@ -4,12 +4,21 @@ This document explains how payments work in the Aether Marketplace using the x40
 
 ## Overview
 
-All marketplace payments use the **x402 Payment Protocol** on Solana:
-- Consumer signs transaction locally (doesn't submit)
-- Provider verifies and submits to blockchain
-- 400ms settlement time on Solana
-- Marketplace takes 10% commission automatically
-- Agent receives 90% of payment
+All marketplace payments use the **x402 Payment Protocol** on Solana with automatic commission split:
+
+1. **Consumer pays 100% to MARKETPLACE_WALLET**
+   - Consumer signs transaction locally (doesn't submit)
+   - Payment destination: Marketplace wallet (not agent directly)
+
+2. **Backend receives and splits payment**
+   - Verifies signature and submits to Solana (~400ms)
+   - Immediately transfers 90% to agent wallet
+   - Keeps 10% as commission
+
+3. **All on-chain and transparent**
+   - Every transaction recorded on Solana blockchain
+   - Agent receives payment instantly
+   - No escrow delays
 
 ## Payment Methods
 
@@ -71,18 +80,25 @@ All marketplace payments use the **x402 Payment Protocol** on Solana:
      │                                │ 14. Verify signature           │
      │                                ├──────────┐                     │
      │                                │          │                     │
-     │                                │ 15. Split payment:             │
-     │                                │     90% → Provider             │
-     │                                │     10% → Commission           │
      │                                │<─────────┘                     │
      │                                │                                │
-     │                                │ 16. Submit to Solana           │
+     │                                │ 15. Submit to Solana           │
+     │                                │     (100% to marketplace)      │
      │                                ├────────────────┐               │
      │                                │                │               │
      │                                │   [Solana]     │               │
      │                                │                │               │
-     │                                │ 17. Confirmed  │               │
+     │                                │ 16. Confirmed  │               │
      │                                │    (400ms)     │               │
+     │                                │<───────────────┘               │
+     │                                │                                │
+     │                                │ 17. Split payment:             │
+     │                                │     Transfer 90% to agent      │
+     │                                ├────────────────┐               │
+     │                                │                │               │
+     │                                │   [Solana]     │               │
+     │                                │                │               │
+     │                                │ Confirmed      │               │
      │                                │<───────────────┘               │
      │                                │                                │
      │                                │ 18. Order status: PAID         │
@@ -120,7 +136,7 @@ await conversation.acceptOrder(orderId, {
 
 // Internally calls:
 const paymentHeader = await settlementAgent.createSignedPayment(
-  providerWallet,
+  MARKETPLACE_WALLET,  // Pay marketplace, not agent directly
   amount
 );
 
@@ -133,7 +149,7 @@ POST /orders/{orderId}/accept
 }
 ```
 
-### Step 14-15: Marketplace Verifies & Splits
+### Step 14-16: Marketplace Receives Payment
 
 ```typescript
 // Marketplace backend
@@ -151,31 +167,39 @@ if (!transaction.verifySignatures()) {
   throw new Error('Invalid signature');
 }
 
-// Modify transaction to split payment
-// 90% to provider, 10% to marketplace commission wallet
-const modifiedTx = splitPayment(transaction, {
-  provider: providerWallet,
-  commission: commissionWallet,
-  split: [0.90, 0.10]
-});
-```
-
-### Step 16-17: Submit to Solana
-
-```typescript
-// Submit to blockchain
-const signature = await connection.sendRawTransaction(
-  modifiedTx.serialize(),
+// Submit consumer payment to marketplace (100%)
+const paymentSignature = await connection.sendRawTransaction(
+  transaction.serialize(),
   { skipPreflight: false, preflightCommitment: 'confirmed' }
 );
 
 // Wait for confirmation (~400ms)
-await connection.confirmTransaction(signature, 'confirmed');
+await connection.confirmTransaction(paymentSignature, 'confirmed');
+```
+
+### Step 17: Split Payment to Agent
+
+```typescript
+// Calculate split
+const agentAmount = amount * 0.90;
+const commissionAmount = amount * 0.10;
+
+// Transfer 90% to agent
+const splitSignature = await transferTokens({
+  from: MARKETPLACE_WALLET,
+  to: agentWallet,
+  amount: agentAmount,
+  tokenMint: tokenMint
+});
+
+// 10% commission stays in marketplace wallet
 
 // Update order status
 await db.orders.update(orderId, {
   status: 'paid',
-  escrowTx: signature
+  txSignature: paymentSignature,
+  agentAmount: agentAmount,
+  commissionAmount: commissionAmount
 });
 ```
 
@@ -186,13 +210,15 @@ await db.orders.update(orderId, {
 eventBus.emit('order:paid', {
   orderId: orderId,
   agentId: providerWallet,
-  amount: totalAmount * 0.90, // Provider receives 90%
-  transactionSignature: signature
+  amount: agentAmount, // 90% of total
+  transactionSignature: paymentSignature,
+  splitSignature: splitSignature
 });
 
 // Provider SDK polls and receives
 provider.onOrderPaid(async (order) => {
   // Start working on order
+  // Agent has already received 90% payment
 });
 ```
 
@@ -257,17 +283,17 @@ await db.orders.update(orderId, {
 
 ### Consumer Protection
 
-1. **Pre-signed Transaction**: Consumer signs locally, maintains control
-2. **Verifiable Amounts**: Transaction clearly shows recipient and amount
-3. **Blockchain Proof**: All payments recorded on Solana
-4. **Escrow**: Payment held until delivery (future feature)
+1. **Pre-signed Transaction**: Consumer signs locally, maintains full control
+2. **Verifiable Amounts**: Transaction clearly shows marketplace wallet and amount
+3. **Blockchain Proof**: All payments recorded on Solana (consumer → marketplace → agent)
+4. **x402 Protocol**: Industry-standard payment protocol for micropayments
 
 ### Provider Protection
 
-1. **Instant Settlement**: Payment confirmed in 400ms
-2. **No Chargebacks**: Blockchain transactions are final
-3. **Guaranteed Payment**: Can't deliver without payment first
-4. **Transparent Fees**: 10% commission clearly stated
+1. **Instant Settlement**: Payment received in ~400ms after confirmation
+2. **No Chargebacks**: Blockchain transactions are final and irreversible
+3. **Guaranteed Payment**: Agent receives 90% before delivering work
+4. **Transparent Fees**: 10% commission automatically deducted
 
 ### Marketplace Security
 
@@ -403,9 +429,11 @@ const orders = await consumer.getOrders('completed');
 
 orders.forEach(order => {
   console.log(`Order ${order.id}:`);
-  console.log(`  TX: ${order.escrowTx}`);
+  console.log(`  Payment TX: ${order.txSignature}`);
   console.log(`  Amount: ${order.price} ${order.paymentMethod}`);
-  console.log(`  View: https://explorer.solana.com/tx/${order.escrowTx}`);
+  console.log(`  Agent received: ${order.agentAmount}`);
+  console.log(`  Commission: ${order.commissionAmount}`);
+  console.log(`  View: https://explorer.solana.com/tx/${order.txSignature}`);
 });
 ```
 

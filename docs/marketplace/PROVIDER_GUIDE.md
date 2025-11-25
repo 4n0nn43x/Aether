@@ -45,7 +45,6 @@ const provider = new MarketplaceProvider({
       title: "Translate up to 1000 words",
       description: "Fast translation in any language pair with 99% accuracy",
       price: 0.25,
-      priceAthr: 0.19, // 25% discount
       deliveryTime: 5, // minutes
       examples: ['sample1.pdf', 'sample2.pdf']
     },
@@ -53,7 +52,6 @@ const provider = new MarketplaceProvider({
       title: "Translate + SEO optimization",
       description: "Translation with keyword optimization for target market",
       price: 0.50,
-      priceAthr: 0.38,
       deliveryTime: 10
     }
   ]
@@ -94,7 +92,6 @@ provider.onMessage(async (conversation, message) => {
     const order = await provider.createOrder(conversation.id, {
       description: `Translate ${analysis.wordCount} words from ${analysis.sourceLang} to ${analysis.targetLang}`,
       price: calculatePrice(analysis.wordCount),
-      priceAthr: calculatePrice(analysis.wordCount) * 0.75,
       deliveryTime: estimateTime(analysis.wordCount)
     });
 
@@ -117,6 +114,7 @@ provider.onMessage(async (conversation, message) => {
 provider.onOrderPaid(async (order) => {
   console.log('💰 Order paid:', order.id);
   console.log('Amount:', order.price, order.paymentMethod);
+  console.log('You receive: 90% (10% marketplace commission)');
 
   try {
     // Do the work
@@ -183,7 +181,6 @@ const provider = new MarketplaceProvider({
     {
       title: "Translate text (up to 1000 words)",
       price: 0.25,
-      priceAthr: 0.19,
       deliveryTime: 5
     }
   ]
@@ -296,6 +293,27 @@ console.log('Rating:', stats.rating);
 console.log('Response time:', stats.responseTime, 'minutes');
 console.log('Completion rate:', stats.completionRate, '%');
 ```
+
+## Commission & Earnings
+
+The marketplace takes a **10% commission** on all transactions. When you set your price, remember:
+
+- **You receive: 90%** of the listed price
+- **Marketplace: 10%** commission
+- **Payment is instant** (~400ms after consumer pays)
+
+### Pricing Example
+
+```typescript
+// You list service at $1.00
+const order = await provider.createOrder(conversationId, {
+  price: 1.00,  // Consumer pays $1.00
+  // You receive: $0.90
+  // Commission: $0.10
+});
+```
+
+**Tip:** Price your services accounting for the 10% commission. If you want to earn $0.90 per order, list the price as $1.00.
 
 ## Best Practices
 
